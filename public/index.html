@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <h1>Vulnerabilities</h1>
+    <ul>
+        <li><a href="/sql-injection">SQL Injection</a></li>
+        <li><a href="/broken-auth">Broken Authentication</a></li>
+    </ul>
+
+    <div id="login-container" style="display: none;">
+        <button class="button logout-button" onclick="logout()">Logout</button>
+    </div>
+
+    <div id="login-message" style="display: none; color: red;">
+        Klikni na bilo koju stranicu kako bi se ulogirao.
+    </div>
+
+
+
+    <script>
+
+
+        fetch('/session-status')
+            .then(response => response.json())
+            .then(data => {
+                if (data.loggedIn) {
+                    document.getElementById('login-container').style.display = 'block';
+                } else {
+                    document.getElementById('login-message').style.display = 'block';
+                }
+            });
+
+
+
+        function logout() {
+            fetch('/logout', {
+                method: 'POST',
+                credentials: 'include', 
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/'; 
+                } else {
+                    alert('Greška prilikom logouta. Pokušajte ponovo.');
+                }
+            })
+            .catch(error => {
+                console.error('Greška:', error);
+                alert('Dogodila se greška. Pokušajte ponovo.');
+            });
+        }
+
+    </script>
+</body>
+</html>

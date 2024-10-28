@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Injection</title>
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+    <h1>SQL Injection</h1>
+
+    <div class="home-container">
+        <button class="home-button" onclick="goHome()">🏠︎</button>
+    </div>
+    <div class="login-container">
+        <button class="button logout-button" onclick="logout()">Logout</button>
+    </div>
+    
+    <label>
+        <input type="checkbox" id="vulnerability-toggle" checked>
+        Omogući ranjivost
+    </label>
+
+    <form id="sql-injection-form">
+        <label for="user-input">Unesite SQL upit:</label><br>
+        <input type="text" id="user-input" name="query" required><br>
+        <button type="submit">Izvrši upit</button>
+    </form>
+
+    <div id="result" class="sql-result" style="display: none;"></div>
+
+
+
+
+
+
+
+    <script>
+
+
+
+
+
+document.getElementById('sql-injection-form').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    const userInput = document.getElementById('user-input').value;
+    const vulnerabilityEnabled = document.getElementById('vulnerability-toggle').checked;
+
+    const response = await fetch('/execute-sql-injection', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `query=${encodeURIComponent(userInput)}&enable=${vulnerabilityEnabled ? 'on' : 'off'}`,
+    });
+
+    const result = await response.json();
+    displayFormattedResult(result);
+});
+
+
+
+function displayFormattedResult(result) {
+    const resultContainer = document.getElementById('result');
+    resultContainer.style.display = 'block'; 
+
+    resultContainer.innerHTML = ''; 
+
+    const message = document.createElement('div');
+    message.className = 'message';
+    message.innerText = result.message;
+    resultContainer.appendChild(message);
+
+    if (result.data && result.data.length > 0) {
+        result.data.forEach(entry => {
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'data-entry';
+
+            Object.entries(entry).forEach(([key, value]) => {
+                const dataLine = document.createElement('pre');
+                dataLine.innerText = `${key}: ${value}`;
+                entryDiv.appendChild(dataLine);
+            });
+
+            resultContainer.appendChild(entryDiv);
+        });
+    } else {
+        const noData = document.createElement('div');
+        noData.className = 'data-entry';
+        noData.innerText = 'No data returned.';
+        resultContainer.appendChild(noData);
+    }
+}
+
+
+
+
+function logout() {
+    fetch('/logout', {
+        method: 'POST',
+        credentials: 'include',
+    })
+    .then(response => {
+        if (response.ok) {
+            window.location.href = '/'; 
+        } else {
+            alert('Greška prilikom logouta. Pokušajte ponovo.');
+        }
+    })
+    .catch(error => {
+        console.error('Greška:', error);
+        alert('Dogodila se greška. Pokušajte ponovo.');
+    });
+}
+
+
+function goHome() {
+    window.location.href = '/home'; 
+}
+
+
+
+    </script>
+</body>
+</html>

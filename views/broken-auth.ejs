@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broken Authentication</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script> 
+   
+
+</head>
+<body>
+    <h1>Broken Authentication</h1>
+
+    <div class="home-container">
+        <button class="home-button" onclick="goHome()">🏠︎</button>
+    </div>
+    <div class="login-container">
+        <button class="button logout-button" onclick="logout()">Logout</button>
+    </div>
+    
+    
+
+
+    
+    <label>
+        <input type="checkbox" id="vulnerability-toggle" checked>
+        Omogući ranjivost
+    </label><br>
+
+    <form id="auth-form">
+        <label for="username">Korisničko ime:</label><br>
+        <input type="text" id="username" name="username" required><br>
+        <label for="password">Lozinka:</label><br>
+        <input type="password" id="password" name="password" required><br>
+
+        <div id="captcha" style="display:none;" class="g-recaptcha" data-sitekey="<%= captchaSiteKey %>"></div>
+        
+        <button type="submit" class="button-primary">Prijavi se</button>
+    </form>
+
+    <div id="auth-result"></div>
+    <div id="lock-timer" style="display:none;">Račun je zaključan. Pokušajte ponovno za <span id="timer"></span> sekundi.</div>
+
+
+
+
+
+
+
+    <script>
+
+        
+        window.onload = function() {
+            const vulnerabilityToggle = document.getElementById('vulnerability-toggle');
+            const isChecked = localStorage.getItem('vulnerabilityEnabled') === 'true';
+            vulnerabilityToggle.checked = isChecked;
+            document.getElementById('captcha').style.display = isChecked ? 'none' : 'block';
+        };
+        
+
+        document.getElementById('vulnerability-toggle').addEventListener('change', function(event) {
+            const isChecked = event.target.checked;
+            document.getElementById('captcha').style.display = isChecked ? 'none' : 'block';
+            localStorage.setItem('vulnerabilityEnabled', isChecked);
+        });
+
+        document.getElementById('auth-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const isVulnerabilityEnabled = document.getElementById('vulnerability-toggle').checked;
+
+            let captchaResponse = '';
+            if (!isVulnerabilityEnabled) {
+                captchaResponse = grecaptcha.getResponse();
+                if (!captchaResponse) {
+                    document.getElementById('auth-result').innerText = 'Molimo riješite CAPTCHA prije slanja.';
+                    return;
+                }
+            }
+
+            const response = await fetch('/simulate-broken-auth', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&vulnerabilityEnabled=${isVulnerabilityEnabled}&g-recaptcha-response=${captchaResponse}`,
+            });
+
+            const result = await response.text();
+            document.getElementById('auth-result').innerText = result;
+
+            if (result.includes('Račun zaključan')) {
+                startLockTimer();
+            }
+        });
+
+
+
+
+        function startLockTimer() {
+            const lockDiv = document.getElementById('lock-timer');
+            lockDiv.style.display = 'block';
+
+            let timeLeft = 60;
+            const timerSpan = document.getElementById('timer');
+            timerSpan.innerText = timeLeft;
+
+            const countdown = setInterval(() => {
+                timeLeft--;
+                timerSpan.innerText = timeLeft;
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdown);
+                    lockDiv.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+
+
+
+
+
+
+        function logout() {
+            fetch('/logout', {
+                method: 'POST',
+                credentials: 'include', 
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/'; 
+                } else {
+                    alert('Greška prilikom logouta. Pokušajte ponovo.');
+                }
+            })
+            .catch(error => {
+                console.error('Greška:', error);
+                alert('Dogodila se greška. Pokušajte ponovo.');
+            });
+        }
+
+
+
+function goHome() {
+    window.location.href = '/home'; 
+}
+
+
+    </script>
+</body>
+</html>
